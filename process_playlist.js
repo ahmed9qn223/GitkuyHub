@@ -1,26 +1,31 @@
 const fs = require('fs');
 
-// 🔴 อัปเดตแล้ว: ใส่โดเมนของคุณลงไปให้เรียบร้อย
+// 🔴 โดเมนด่านหน้าของคุณ
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
-// เปลี่ยนมาเข้ารหัสในรูปแบบ JSON {u: "url", e: หมดอายุ} -> URL Encode -> Base64
+// ฟังก์ชันเข้ารหัส Base64 (ซ่อน URL)
 function encodeBase64Proxy(str) {
-    // กำหนดเวลาหมดอายุไปอีก 10 ปี (เพราะไฟล์ Build ทิ้งไว้บน GitHub)
     const expiryDate = Date.now() + (10 * 365 * 24 * 60 * 60 * 1000);
     const jsonPayload = JSON.stringify({ u: str, e: expiryDate });
     return Buffer.from(encodeURIComponent(jsonPayload)).toString('base64');
 }
 
+// 🛡️ [แก้บั๊กหลัก] แยกร่าง Header ออกมาก่อนเข้ารหัส Base64
 function protectPlaylistUrls(jsonObj) {
     function processGroups(groups) {
         if (!Array.isArray(groups)) return;
         groups.forEach(g => {
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
-                    // เปลี่ยนรูปแบบการเช็คและลิ้งก์เป็นแบบใหม่
                     if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
-                        const payload = s.url; 
-                        s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(payload)}`;
+                        
+                        // 🌟 ดึง Header (เครื่องหมาย |) ออกมาก่อน ไม่ให้โดนเข้ารหัสไปด้วย
+                        let parts = s.url.split('|');
+                        let actualUrl = parts[0];
+                        let headersPart = parts.length > 1 ? "|" + parts.slice(1).join('|') : "";
+                        
+                        // นำ Header ไปแปะไว้ท้ายสุดด้านนอก Base64 เพื่อให้แอป Wiseplay มองเห็นและนำไปใช้งานต่อได้
+                        s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(actualUrl)}${headersPart}`;
                     }
                 });
             }

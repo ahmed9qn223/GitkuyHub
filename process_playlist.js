@@ -3,26 +3,28 @@ const fs = require('fs');
 // 🔴 โดเมนด่านหน้าของคุณ
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
-// ฟังก์ชันเข้ารหัส Base64 (ซ่อน URL) แบบตรงไปตรงมาที่สุด
+// 🌟 ย่อ Base64 ให้สั้นที่สุด (ไม่ต้องมี JSON) และแปลงเป็น URL-Safe
 function encodeBase64Proxy(str) {
-    const expiryDate = Date.now() + (10 * 365 * 24 * 60 * 60 * 1000);
-    const jsonPayload = JSON.stringify({ u: str, e: expiryDate });
-    return Buffer.from(encodeURIComponent(jsonPayload)).toString('base64');
+    let b64 = Buffer.from(encodeURIComponent(str)).toString('base64');
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// 🛡️ [แก้บั๊ก] แปลงลิ้งก์แบบ "ดึงตรงๆ" ไม่แยก ไม่หั่น ไม่เปลี่ยนนามสกุล
 function protectPlaylistUrls(jsonObj) {
     function processGroups(groups) {
         if (!Array.isArray(groups)) return;
         groups.forEach(g => {
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
-                    // ข้าม URL ที่ถูกเข้ารหัสไปแล้ว
+                    // 🚀 [จุดแตกหัก] ลบคำสั่งบังคับใช้ Native Player ออก!
+                    // เพราะ Native Player ไม่รองรับลิ้งก์ Proxy Redirect
+                    // ลบทิ้งเพื่อให้ Wiseplay ใช้เครื่องเล่นหลัก (ExoPlayer) ของตัวเองแทน
+                    if (s.playInNatPlayer) {
+                        delete s.playInNatPlayer;
+                    }
+
+                    // เข้ารหัสลิ้งก์เป็น Base64
                     if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
-                        
-                        // 🌟 จับลิ้งก์ดิบมาตรงๆ ยัดเข้า Base64 แล้วใส่ /play.m3u8 เลย! (เหมือนรูปที่คุณส่งมาเป๊ะๆ)
                         s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(s.url)}`;
-                        
                     }
                 });
             }

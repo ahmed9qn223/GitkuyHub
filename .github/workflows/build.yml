@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'raw_filmhub.json'
-
       - 'process_playlist.js'
   workflow_dispatch:
 
@@ -30,6 +29,5 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # แอดทั้ง 2 ไฟล์
           git add filmhub.json serieshub.json
           git diff --quiet && git diff --staged --quiet || (git commit -m "auto: update protected playlists" && git push)

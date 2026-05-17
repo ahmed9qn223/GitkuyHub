@@ -17,15 +17,19 @@ function protectPlaylistUrls(jsonObj) {
         groups.forEach(g => {
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
-                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
+                    // ข้าม URL ที่ถูกเข้ารหัสไปแล้ว
+                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=") && !s.url.includes("/play?t=")) {
                         
                         // 🌟 ดึง Header (เครื่องหมาย |) ออกมาก่อน ไม่ให้โดนเข้ารหัสไปด้วย
                         let parts = s.url.split('|');
                         let actualUrl = parts[0];
                         let headersPart = parts.length > 1 ? "|" + parts.slice(1).join('|') : "";
                         
+                        // 🌟 [แก้บั๊กหมุนค้าง] แยกนามสกุลไฟล์! ถ้าเป็นทีวีให้ใช้ /play.m3u8 ถ้าเป็นหนัง MP4 ให้ใช้ /play
+                        let path = actualUrl.includes(".m3u8") ? "/play.m3u8" : "/play";
+                        
                         // นำ Header ไปแปะไว้ท้ายสุดด้านนอก Base64 เพื่อให้แอป Wiseplay มองเห็นและนำไปใช้งานต่อได้
-                        s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(actualUrl)}${headersPart}`;
+                        s.url = `${BASE_ORIGIN}${path}?t=${encodeBase64Proxy(actualUrl)}${headersPart}`;
                     }
                 });
             }

@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'raw_filmhub.json'
+      - 'raw_serieshub.json'
       - 'process_playlist.js'
   workflow_dispatch:
 
@@ -16,6 +17,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -30,4 +33,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add filmhub.json serieshub.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "auto: update protected playlists" && git push)
+          # เพิ่ม git pull --rebase เพื่อดึงข้อมูลล่าสุดก่อนเซฟทับ ป้องกันการ Error
+          git diff --quiet && git diff --staged --quiet || (git commit -m "auto: update protected playlists" && git pull --rebase origin main && git push)

@@ -3,14 +3,14 @@ const fs = require('fs');
 // 🔴 โดเมนด่านหน้าของคุณ
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
-// ฟังก์ชันเข้ารหัส Base64 (ซ่อน URL)
+// ฟังก์ชันเข้ารหัส Base64 (ซ่อน URL) แบบตรงไปตรงมาที่สุด
 function encodeBase64Proxy(str) {
     const expiryDate = Date.now() + (10 * 365 * 24 * 60 * 60 * 1000);
     const jsonPayload = JSON.stringify({ u: str, e: expiryDate });
     return Buffer.from(encodeURIComponent(jsonPayload)).toString('base64');
 }
 
-// 🛡️ [แก้บั๊กหลัก] แยกร่าง Header ออกมาก่อนเข้ารหัส Base64
+// 🛡️ [แก้บั๊ก] แปลงลิ้งก์แบบ "ดึงตรงๆ" ไม่แยก ไม่หั่น ไม่เปลี่ยนนามสกุล
 function protectPlaylistUrls(jsonObj) {
     function processGroups(groups) {
         if (!Array.isArray(groups)) return;
@@ -18,18 +18,11 @@ function protectPlaylistUrls(jsonObj) {
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
                     // ข้าม URL ที่ถูกเข้ารหัสไปแล้ว
-                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=") && !s.url.includes("/play?t=")) {
+                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
                         
-                        // 🌟 ดึง Header (เครื่องหมาย |) ออกมาก่อน ไม่ให้โดนเข้ารหัสไปด้วย
-                        let parts = s.url.split('|');
-                        let actualUrl = parts[0];
-                        let headersPart = parts.length > 1 ? "|" + parts.slice(1).join('|') : "";
+                        // 🌟 จับลิ้งก์ดิบมาตรงๆ ยัดเข้า Base64 แล้วใส่ /play.m3u8 เลย! (เหมือนรูปที่คุณส่งมาเป๊ะๆ)
+                        s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(s.url)}`;
                         
-                        // 🌟 [แก้บั๊กหมุนค้าง] แยกนามสกุลไฟล์! ถ้าเป็นทีวีให้ใช้ /play.m3u8 ถ้าเป็นหนัง MP4 ให้ใช้ /play
-                        let path = actualUrl.includes(".m3u8") ? "/play.m3u8" : "/play";
-                        
-                        // นำ Header ไปแปะไว้ท้ายสุดด้านนอก Base64 เพื่อให้แอป Wiseplay มองเห็นและนำไปใช้งานต่อได้
-                        s.url = `${BASE_ORIGIN}${path}?t=${encodeBase64Proxy(actualUrl)}${headersPart}`;
                     }
                 });
             }

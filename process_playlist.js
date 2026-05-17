@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 // 🔴 เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ
-const BASE_ORIGIN = "[https://your-worker-domain.workers.dev](https://your-worker-domain.workers.dev)"; 
+const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
 // ใช้ Buffer ของ Node.js ซึ่งทำงานได้เร็วกว่าหลักร้อยเท่าเมื่อเทียบกับลูปธรรมดา
 function encodeHex(str) {

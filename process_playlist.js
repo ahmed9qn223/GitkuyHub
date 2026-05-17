@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 // 🔴🔴 สำคัญมาก: เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ 🔴🔴
-const BASE_ORIGIN = "ikuyikuysas.dufreeapi.uk"; 
+const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
 function encodeHex(str) {
     return Buffer.from(str, 'utf8').toString('hex');

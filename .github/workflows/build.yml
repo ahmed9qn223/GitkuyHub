@@ -1,62 +1,35 @@
-const fs = require('fs');
+name: Build Protected Playlist
 
-// 🔴🔴 สำคัญมาก: เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ 🔴🔴
-const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'raw_filmhub.json'
+      - 'raw_serieshub.json'
+      - 'process_playlist.js'
+  workflow_dispatch:
 
-function encodeHex(str) {
-    return Buffer.from(str, 'utf8').toString('hex');
-}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-function protectPlaylistUrls(jsonObj) {
-    // 🟢 ระบบดำน้ำลึก (Recursive) ค้นหาโฟลเดอร์ที่ซ้อนกันกี่ชั้นก็ได้
-    function processGroups(groups) {
-        if (!Array.isArray(groups)) return;
-        
-        groups.forEach(g => {
-            // ถ้าเจอหมวดหมู่สถานี (stations) ให้เริ่มเข้ารหัสลิ้งก์
-            if (g.stations && Array.isArray(g.stations)) {
-                g.stations.forEach(s => {
-                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play?data=")) {
-                        const payload = s.url; 
-                        s.url = `${BASE_ORIGIN}/play?data=${encodeHex(payload)}`;
-                    }
-                });
-            }
-            // ถ้าเจอ "โฟลเดอร์ซ้อนโฟลเดอร์" (groups ซ้อน groups) ให้มุดลงไปหาต่อ!
-            if (g.groups && Array.isArray(g.groups)) {
-                processGroups(g.groups);
-            }
-        });
-    }
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    if (jsonObj && jsonObj.groups) {
-        processGroups(jsonObj.groups);
-    }
-    return jsonObj;
-}
+      - name: Run Script to Protect URLs
+        run: node process_playlist.js
 
-function processFile(inputFile, outputFile) {
-    if (fs.existsSync(inputFile)) {
-        console.log(`⏳ กำลังอ่านไฟล์ ${inputFile}...`);
-        const rawData = fs.readFileSync(inputFile, 'utf8');
-        const parsedData = JSON.parse(rawData);
-
-        console.log(`🔒 กำลังเข้ารหัสลิ้งก์สำหรับ ${inputFile}...`);
-        const protectedData = protectPlaylistUrls(parsedData);
-
-        console.log(`💾 กำลังบันทึกไฟล์ ${outputFile}...`);
-        fs.writeFileSync(outputFile, JSON.stringify(protectedData));
-        console.log(`✅ ประมวลผล ${outputFile} สำเร็จ!`);
-    } else {
-        console.log(`⚠️ ไม่พบไฟล์ ${inputFile} ข้ามการทำงาน`);
-    }
-}
-
-try {
-    processFile('raw_filmhub.json', 'filmhub.json');
-    processFile('raw_serieshub.json', 'serieshub.json');
-    console.log("🎉 เสร็จสิ้นทั้งหมด!");
-} catch (error) {
-    console.error("❌ เกิดข้อผิดพลาด:", error.message);
-    process.exit(1);
-}
+      - name: Commit and Push output
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # แอดทั้ง 2 ไฟล์
+          git add filmhub.json serieshub.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "auto: update protected playlists" && git push)

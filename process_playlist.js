@@ -1,43 +1,62 @@
 const fs = require('fs');
 
-// 🔴 เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ
-const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
+// 🔴🔴 สำคัญมาก: เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ 🔴🔴
+const BASE_ORIGIN = "ikuyikuysas.dufreeapi.uk"; 
 
-// ใช้ Buffer ของ Node.js ซึ่งทำงานได้เร็วกว่าหลักร้อยเท่าเมื่อเทียบกับลูปธรรมดา
 function encodeHex(str) {
     return Buffer.from(str, 'utf8').toString('hex');
 }
 
 function protectPlaylistUrls(jsonObj) {
-    if (jsonObj && jsonObj.groups) {
-        jsonObj.groups.forEach(g => {
-            if (g.stations) {
+    // 🟢 ระบบดำน้ำลึก (Recursive) ค้นหาโฟลเดอร์ที่ซ้อนกันกี่ชั้นก็ได้
+    function processGroups(groups) {
+        if (!Array.isArray(groups)) return;
+        
+        groups.forEach(g => {
+            // ถ้าเจอหมวดหมู่สถานี (stations) ให้เริ่มเข้ารหัสลิ้งก์
+            if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
                     if (s.url && s.url.startsWith("http") && !s.url.includes("/play?data=")) {
-                        // เข้ารหัสเฉพาะ URL ล้วนๆ (ไม่ต้องมี |||เวลาหมดอายุ)
                         const payload = s.url; 
                         s.url = `${BASE_ORIGIN}/play?data=${encodeHex(payload)}`;
                     }
                 });
             }
+            // ถ้าเจอ "โฟลเดอร์ซ้อนโฟลเดอร์" (groups ซ้อน groups) ให้มุดลงไปหาต่อ!
+            if (g.groups && Array.isArray(g.groups)) {
+                processGroups(g.groups);
+            }
         });
+    }
+
+    if (jsonObj && jsonObj.groups) {
+        processGroups(jsonObj.groups);
     }
     return jsonObj;
 }
 
+function processFile(inputFile, outputFile) {
+    if (fs.existsSync(inputFile)) {
+        console.log(`⏳ กำลังอ่านไฟล์ ${inputFile}...`);
+        const rawData = fs.readFileSync(inputFile, 'utf8');
+        const parsedData = JSON.parse(rawData);
+
+        console.log(`🔒 กำลังเข้ารหัสลิ้งก์สำหรับ ${inputFile}...`);
+        const protectedData = protectPlaylistUrls(parsedData);
+
+        console.log(`💾 กำลังบันทึกไฟล์ ${outputFile}...`);
+        fs.writeFileSync(outputFile, JSON.stringify(protectedData));
+        console.log(`✅ ประมวลผล ${outputFile} สำเร็จ!`);
+    } else {
+        console.log(`⚠️ ไม่พบไฟล์ ${inputFile} ข้ามการทำงาน`);
+    }
+}
+
 try {
-    console.log("⏳ กำลังอ่านไฟล์ raw_filmhub.json...");
-    const rawData = fs.readFileSync('raw_filmhub.json', 'utf8');
-    const parsedData = JSON.parse(rawData);
-
-    console.log("🔒 กำลังเข้ารหัสลิ้งก์...");
-    const protectedData = protectPlaylistUrls(parsedData);
-
-    console.log("💾 กำลังบันทึกไฟล์ filmhub.json...");
-    fs.writeFileSync('filmhub.json', JSON.stringify(protectedData));
-    
-    console.log("✅ เสร็จสิ้น! ไฟล์พร้อมใช้งานแล้ว");
+    processFile('raw_filmhub.json', 'filmhub.json');
+    processFile('raw_serieshub.json', 'serieshub.json');
+    console.log("🎉 เสร็จสิ้นทั้งหมด!");
 } catch (error) {
     console.error("❌ เกิดข้อผิดพลาด:", error.message);
-    process.exit(1); // แจ้ง GitHub ให้รู้ว่าพัง
+    process.exit(1);
 }

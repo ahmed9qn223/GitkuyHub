@@ -3,9 +3,12 @@ const fs = require('fs');
 // 🔴🔴 สำคัญมาก: เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ 🔴🔴
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk";
 
-// เปลี่ยนจาก Hex เป็นการเข้ารหัสแบบ Base64 (ปลอดภัยกับอักขระพิเศษ)
+// เปลี่ยนมาเข้ารหัสในรูปแบบ JSON {u: "url", e: หมดอายุ} -> URL Encode -> Base64
 function encodeBase64Proxy(str) {
-    return Buffer.from(encodeURIComponent(str)).toString('base64');
+    // กำหนดเวลาหมดอายุไปอีก 10 ปี (เพราะไฟล์ Build ทิ้งไว้บน GitHub)
+    const expiryDate = Date.now() + (10 * 365 * 24 * 60 * 60 * 1000);
+    const jsonPayload = JSON.stringify({ u: str, e: expiryDate });
+    return Buffer.from(encodeURIComponent(jsonPayload)).toString('base64');
 }
 
 function protectPlaylistUrls(jsonObj) {

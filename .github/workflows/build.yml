@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'raw_filmhub.json'
-      - 'raw_serieshub.json'
+
       - 'process_playlist.js'
   workflow_dispatch:
 

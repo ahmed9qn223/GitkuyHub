@@ -18,7 +18,7 @@ function protectPlaylistUrls(jsonObj) {
                 g.stations.forEach(s => {
                     if (s.url && s.url.startsWith("http") && !s.url.includes("/play?data=")) {
                         const payload = s.url; 
-                        s.url = `${BASE_ORIGIN}/play?data=${encodeHex(payload)}`;
+                        s.url = `${BASE_ORIGIN}/play?data=${encodeHex(payload)}.m3u8`;
                     }
                 });
             }

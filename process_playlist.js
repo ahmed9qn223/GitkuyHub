@@ -1,28 +1,26 @@
 const fs = require('fs');
 
 // 🔴🔴 สำคัญมาก: เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ 🔴🔴
-const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
+const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk";
 
-function encodeHex(str) {
-    return Buffer.from(str, 'utf8').toString('hex');
+// เปลี่ยนจาก Hex เป็นการเข้ารหัสแบบ Base64 (ปลอดภัยกับอักขระพิเศษ)
+function encodeBase64Proxy(str) {
+    return Buffer.from(encodeURIComponent(str)).toString('base64');
 }
 
 function protectPlaylistUrls(jsonObj) {
-    // 🟢 ระบบดำน้ำลึก (Recursive) ค้นหาโฟลเดอร์ที่ซ้อนกันกี่ชั้นก็ได้
     function processGroups(groups) {
         if (!Array.isArray(groups)) return;
-        
         groups.forEach(g => {
-            // ถ้าเจอหมวดหมู่สถานี (stations) ให้เริ่มเข้ารหัสลิ้งก์
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
-                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play?data=")) {
+                    // เปลี่ยนรูปแบบการเช็คและลิ้งก์เป็นแบบใหม่
+                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
                         const payload = s.url; 
-                        s.url = `${BASE_ORIGIN}/play?data=${encodeHex(payload)}.m3u8`;
+                        s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(payload)}`;
                     }
                 });
             }
-            // ถ้าเจอ "โฟลเดอร์ซ้อนโฟลเดอร์" (groups ซ้อน groups) ให้มุดลงไปหาต่อ!
             if (g.groups && Array.isArray(g.groups)) {
                 processGroups(g.groups);
             }

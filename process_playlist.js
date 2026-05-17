@@ -1,7 +1,7 @@
 const fs = require('fs');
 
-// 🔴🔴 สำคัญมาก: เปลี่ยนตรงนี้เป็น URL Worker หลักของคุณ 🔴🔴
-const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk";
+// 🔴 อัปเดตแล้ว: ใส่โดเมนของคุณลงไปให้เรียบร้อย
+const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
 // เปลี่ยนมาเข้ารหัสในรูปแบบ JSON {u: "url", e: หมดอายุ} -> URL Encode -> Base64
 function encodeBase64Proxy(str) {

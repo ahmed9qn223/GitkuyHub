@@ -3,16 +3,16 @@ const fs = require('fs');
 // 🔴 โดเมนด่านหน้าของคุณ
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
-// 🌟 ฟังก์ชันเข้ารหัส Base64 (คืนค่ารูปแบบดั้งเดิมที่พิสูจน์แล้วว่าทำงานได้ 100%)
+// 🌟 รูปแบบการเข้ารหัส Base64 เดียวกับตัวอย่างที่คุณส่งมาเป๊ะๆ 
+// (URL -> encodeURIComponent -> Base64 -> ตัด = ท้ายสุดออก)
 function encodeBase64Proxy(str) {
-    const expiryDate = Date.now() + (10 * 365 * 24 * 60 * 60 * 1000);
-    const jsonPayload = JSON.stringify({ u: str, e: expiryDate });
-    return Buffer.from(encodeURIComponent(jsonPayload)).toString('base64');
+    let b64 = Buffer.from(encodeURIComponent(str)).toString('base64');
+    return b64.replace(/=+$/, ''); 
 }
 
 function protectPlaylistUrls(jsonObj) {
     
-    // 🚀 ถอนรากถอนโคนคำสั่ง Native Player จากระดับหน้าแรก (Root)
+    // ถอนรากถอนโคนคำสั่ง Native Player เพื่อป้องกันเครื่องเล่นค้างตอนเจอลิ้งก์ Redirect
     if (jsonObj.hasOwnProperty('playInNatPlayer')) {
         delete jsonObj.playInNatPlayer;
     }
@@ -21,7 +21,6 @@ function protectPlaylistUrls(jsonObj) {
         if (!Array.isArray(groups)) return;
         groups.forEach(g => {
             
-            // 🚀 ถอนรากถอนโคนคำสั่ง Native Player จากระดับโฟลเดอร์ (Group)
             if (g.hasOwnProperty('playInNatPlayer')) {
                 delete g.playInNatPlayer;
             }
@@ -29,16 +28,13 @@ function protectPlaylistUrls(jsonObj) {
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
                     
-                    // 🚀 ถอนรากถอนโคนคำสั่ง Native Player จากระดับตัวหนัง (Station)
-                    // บังคับให้ Wiseplay ใช้ ExoPlayer เสมอ เพื่อแก้ปัญหาค้างตอนเจอลิ้งก์ Proxy Redirect
                     if (s.hasOwnProperty('playInNatPlayer')) {
                         delete s.playInNatPlayer;
                     }
                     
-                    // ⚠️ ห้ามลบ referer / userAgent / headers เด็ดขาด! เซิร์ฟเวอร์หนังจำเป็นต้องใช้ยืนยันตัวตน
-
-                    // เข้ารหัสลิ้งก์เป็น Base64
-                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
+                    // 🌟 เข้ารหัส URL ให้เป็นรูปแบบที่คุณส่งมา: /play.m3u8?t=[Base64]
+                    // (ใช้ t= เพราะ Worker ของคุณรอรับค่าตัวแปรนี้อยู่ ทำงานเหมือน u= ทุกประการ)
+                    if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?")) {
                         s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(s.url)}`;
                     }
                 });
@@ -61,7 +57,7 @@ function processFile(inputFile, outputFile) {
         const rawData = fs.readFileSync(inputFile, 'utf8');
         const parsedData = JSON.parse(rawData);
 
-        console.log(`🔒 กำลังประมวลผลลิ้งก์และปรับแต่งเครื่องเล่นสำหรับ ${inputFile}...`);
+        console.log(`🔒 กำลังเข้ารหัสลิ้งก์สำหรับ ${inputFile}...`);
         const protectedData = protectPlaylistUrls(parsedData);
 
         console.log(`💾 กำลังบันทึกไฟล์ ${outputFile}...`);

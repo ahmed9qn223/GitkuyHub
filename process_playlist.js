@@ -3,10 +3,9 @@ const fs = require('fs');
 // 🔴 โดเมนด่านหน้าของคุณ
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
-// 🌟 ย่อ Base64 ให้สั้นที่สุด (ไม่ต้องมี JSON) และแปลงเป็น URL-Safe
+// 🌟 ฟังก์ชันเข้ารหัส Base64 (แก้บั๊กให้เข้ารหัส URL เพียวๆ ตรงกับ Worker หลัก)
 function encodeBase64Proxy(str) {
-    let b64 = Buffer.from(encodeURIComponent(str)).toString('base64');
-    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return Buffer.from(encodeURIComponent(str)).toString('base64');
 }
 
 function protectPlaylistUrls(jsonObj) {
@@ -15,12 +14,13 @@ function protectPlaylistUrls(jsonObj) {
         groups.forEach(g => {
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
-                    // 🚀 [จุดแตกหัก] ลบคำสั่งบังคับใช้ Native Player ออก!
-                    // เพราะ Native Player ไม่รองรับลิ้งก์ Proxy Redirect
-                    // ลบทิ้งเพื่อให้ Wiseplay ใช้เครื่องเล่นหลัก (ExoPlayer) ของตัวเองแทน
-                    if (s.playInNatPlayer) {
-                        delete s.playInNatPlayer;
-                    }
+                    
+                    // 🚀 [หัวใจสำคัญแก้แอปค้าง] ล้างขยะที่ทำให้ Wiseplay เอ๋อตอนเจอลิ้งก์ 302 Redirect
+                    // การลบค่าเหล่านี้ออก จะจำลองการทำงานให้เหมือนกับตอนที่คุณ "ก๊อปปี้ URL ไปวางสดๆ" 
+                    delete s.playInNatPlayer;
+                    delete s.referer;
+                    delete s.userAgent;
+                    delete s.headers;
 
                     // เข้ารหัสลิ้งก์เป็น Base64
                     if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
@@ -46,7 +46,7 @@ function processFile(inputFile, outputFile) {
         const rawData = fs.readFileSync(inputFile, 'utf8');
         const parsedData = JSON.parse(rawData);
 
-        console.log(`🔒 กำลังเข้ารหัสลิ้งก์สำหรับ ${inputFile}...`);
+        console.log(`🔒 กำลังเข้ารหัสลิ้งก์และล้างขยะสำหรับ ${inputFile}...`);
         const protectedData = protectPlaylistUrls(parsedData);
 
         console.log(`💾 กำลังบันทึกไฟล์ ${outputFile}...`);

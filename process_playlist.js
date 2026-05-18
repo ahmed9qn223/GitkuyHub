@@ -73,8 +73,8 @@ function processFile(inputFile, outputFile) {
 }
 
 try {
-    processFile('raw_filmhub.json', 'filmhub1.json');
-    processFile('raw_serieshub.json', 'serieshub1.json');
+    processFile('raw_filmhub.json', 'filmhub.json');
+    processFile('raw_serieshub.json', 'serieshub.json');
     console.log("🎉 เสร็จสิ้นทั้งหมด!");
 } catch (error) {
     console.error("❌ เกิดข้อผิดพลาด:", error.message);

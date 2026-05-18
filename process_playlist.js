@@ -3,24 +3,39 @@ const fs = require('fs');
 // 🔴 โดเมนด่านหน้าของคุณ
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
-// 🌟 ฟังก์ชันเข้ารหัส Base64 (แก้บั๊กให้เข้ารหัส URL เพียวๆ ตรงกับ Worker หลัก)
+// 🌟 ฟังก์ชันเข้ารหัส Base64 (คืนค่ารูปแบบดั้งเดิมที่พิสูจน์แล้วว่าทำงานได้ 100%)
 function encodeBase64Proxy(str) {
-    return Buffer.from(encodeURIComponent(str)).toString('base64');
+    const expiryDate = Date.now() + (10 * 365 * 24 * 60 * 60 * 1000);
+    const jsonPayload = JSON.stringify({ u: str, e: expiryDate });
+    return Buffer.from(encodeURIComponent(jsonPayload)).toString('base64');
 }
 
 function protectPlaylistUrls(jsonObj) {
+    
+    // 🚀 ถอนรากถอนโคนคำสั่ง Native Player จากระดับหน้าแรก (Root)
+    if (jsonObj.hasOwnProperty('playInNatPlayer')) {
+        delete jsonObj.playInNatPlayer;
+    }
+
     function processGroups(groups) {
         if (!Array.isArray(groups)) return;
         groups.forEach(g => {
+            
+            // 🚀 ถอนรากถอนโคนคำสั่ง Native Player จากระดับโฟลเดอร์ (Group)
+            if (g.hasOwnProperty('playInNatPlayer')) {
+                delete g.playInNatPlayer;
+            }
+
             if (g.stations && Array.isArray(g.stations)) {
                 g.stations.forEach(s => {
                     
-                    // 🚀 [หัวใจสำคัญแก้แอปค้าง] ล้างขยะที่ทำให้ Wiseplay เอ๋อตอนเจอลิ้งก์ 302 Redirect
-                    // การลบค่าเหล่านี้ออก จะจำลองการทำงานให้เหมือนกับตอนที่คุณ "ก๊อปปี้ URL ไปวางสดๆ" 
-                    delete s.playInNatPlayer;
-                    delete s.referer;
-                    delete s.userAgent;
-                    delete s.headers;
+                    // 🚀 ถอนรากถอนโคนคำสั่ง Native Player จากระดับตัวหนัง (Station)
+                    // บังคับให้ Wiseplay ใช้ ExoPlayer เสมอ เพื่อแก้ปัญหาค้างตอนเจอลิ้งก์ Proxy Redirect
+                    if (s.hasOwnProperty('playInNatPlayer')) {
+                        delete s.playInNatPlayer;
+                    }
+                    
+                    // ⚠️ ห้ามลบ referer / userAgent / headers เด็ดขาด! เซิร์ฟเวอร์หนังจำเป็นต้องใช้ยืนยันตัวตน
 
                     // เข้ารหัสลิ้งก์เป็น Base64
                     if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?t=")) {
@@ -46,7 +61,7 @@ function processFile(inputFile, outputFile) {
         const rawData = fs.readFileSync(inputFile, 'utf8');
         const parsedData = JSON.parse(rawData);
 
-        console.log(`🔒 กำลังเข้ารหัสลิ้งก์และล้างขยะสำหรับ ${inputFile}...`);
+        console.log(`🔒 กำลังประมวลผลลิ้งก์และปรับแต่งเครื่องเล่นสำหรับ ${inputFile}...`);
         const protectedData = protectPlaylistUrls(parsedData);
 
         console.log(`💾 กำลังบันทึกไฟล์ ${outputFile}...`);
@@ -58,8 +73,8 @@ function processFile(inputFile, outputFile) {
 }
 
 try {
-    processFile('raw_filmhub.json', 'filmhub.json');
-    processFile('raw_serieshub.json', 'serieshub.json');
+    processFile('raw_filmhub.json', 'filmhub1.json');
+    processFile('raw_serieshub.json', 'serieshub1.json');
     console.log("🎉 เสร็จสิ้นทั้งหมด!");
 } catch (error) {
     console.error("❌ เกิดข้อผิดพลาด:", error.message);

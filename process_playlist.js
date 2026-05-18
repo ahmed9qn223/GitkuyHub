@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-// 🔴 โดเมนด่านหน้าของคุณ
+// 🔴 คืนค่ากลับไปใช้โดเมนและ Proxy เดิมที่ทำงานได้สมบูรณ์ 100%
 const BASE_ORIGIN = "https://ikuyikuysas.dufreeapi.uk"; 
 
 // 🌟 รูปแบบการเข้ารหัส Base64 เดียวกับตัวอย่างที่คุณส่งมาเป๊ะๆ 
@@ -32,10 +32,9 @@ function protectPlaylistUrls(jsonObj) {
                         delete s.playInNatPlayer;
                     }
                     
-                    // 🌟 เข้ารหัส URL ให้เป็นรูปแบบที่คุณส่งมา: /play.m3u8?t=[Base64]
-                    // (ใช้ t= เพราะ Worker ของคุณรอรับค่าตัวแปรนี้อยู่ ทำงานเหมือน u= ทุกประการ)
+                    // 🌟 คืนค่ากลับไปใช้พารามิเตอร์ ?u= ตามระบบเดิมที่เคยอ่านได้
                     if (s.url && s.url.startsWith("http") && !s.url.includes("/play.m3u8?")) {
-                        s.url = `${BASE_ORIGIN}/play.m3u8?t=${encodeBase64Proxy(s.url)}`;
+                        s.url = `${BASE_ORIGIN}/play.m3u8?u=${encodeBase64Proxy(s.url)}`;
                     }
                 });
             }
